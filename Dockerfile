@@ -10,15 +10,14 @@ WORKDIR /rails
 # Set production environment
 ARG RAILS_ENV
 ENV RAILS_ENV=${RAILS_ENV:-development} \
-    # BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle"
 
 # Throw-away build stage to reduce size of final image
 FROM base as build
 
-# Install packages needed to build gems
+# Install packages needed to build gems and PostgreSQL client
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential default-libmysqlclient-dev git libvips pkg-config
+    apt-get install --no-install-recommends -y build-essential libpq-dev git libvips pkg-config postgresql-client
 
 # Install application gems
 COPY Gemfile Gemfile.lock bundler.sh ./
@@ -38,10 +37,10 @@ RUN for file in config/*.yml.example; do mv "$file" "${file%%.example}"; done
 # Final stage for app image
 FROM base
 
-# Install packages needed for deployment
+# Install packages needed for deployment and PostgreSQL
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl default-mysql-client libvips && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    apt-get install --no-install-recommends -y curl postgresql-contrib libvips && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 # Copy built artifacts: gems, application
 COPY --from=build /usr/local/bundle /usr/local/bundle

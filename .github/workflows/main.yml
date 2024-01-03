@@ -8,17 +8,15 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     services:
-      mysql:
-        image: mysql:8.2.0
+      postgres:
+        image: postgres:14.1
         ports:
-          - "3306:3306"
+          - "5432:5432"
         env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: test_db
-          MYSQL_USER: rails
-          MYSQL_PASSWORD: railsPassword54321
+          POSTGRES_USER: rails
+          POSTGRES_PASSWORD: railsPassword54321
         options: >-
-          --health-cmd="mysqladmin ping -h localhost"
+          --health-cmd="pg_isready"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
@@ -32,18 +30,18 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Install MySQL client
+      - name: Install PostgreSQL client
         run: |
           sudo apt-get update
-          sudo apt-get install -y mysql-client
+          sudo apt-get install -y postgresql-client
 
-      - name: Wait for MySQL
+      - name: Wait for PostgreSQL
         run: |
           for i in {1..20}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ppassword --silent; then
+            if pg_isready; then
               break
             fi
-            echo "Waiting for MySQL ($i)..."
+            echo "Waiting for PostgreSQL ($i)..."
             sleep 1
           done
 
@@ -56,9 +54,9 @@ jobs:
       - name: Set up database
         env:
           DB_HOST: 127.0.0.1
-          DB_USER: root
-          DB_PASSWORD: password
-          DB_PORT: 3306
+          DB_USER: postgres
+          DB_PASSWORD: railsPassword54321
+          DB_PORT: 5432
           RAILS_ENV: test
         run: |
           bundle exec rails db:create db:schema:load

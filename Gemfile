@@ -32,7 +32,7 @@ end
 gem "dotenv-rails"
 gem "lograge"
 gem "multi_json"
-gem "mysql2", "~> 0.5"
+gem "pg", "~> 1.5"
 gem "puma", ">= 5.0"
 gem "rack-cors"
 gem "rails", "~> 7.1.2"

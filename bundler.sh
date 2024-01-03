@@ -2,7 +2,7 @@
 
 set -ex
 
-if [$RAILS_ENV != 'development'] && [$RAILS_ENV != 'test']; then
+if [[ "$RAILS_ENV" != "development" && "$RAILS_ENV" != "test" ]]; then
   echo "** Installing / re-installing production bundle **"
   bundle config set --local deployment "true"
 fi

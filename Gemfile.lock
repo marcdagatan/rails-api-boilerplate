@@ -148,7 +148,6 @@ GEM
     msgpack (1.7.2)
     multi_json (1.15.0)
     mutex_m (0.2.0)
-    mysql2 (0.5.5)
     net-imap (0.4.8)
       date
       net-protocol
@@ -175,6 +174,7 @@ GEM
     parser (3.2.2.4)
       ast (~> 2.4.1)
       racc
+    pg (1.5.4)
     psych (5.1.2)
       stringio
     puma (6.4.0)
@@ -336,7 +336,7 @@ DEPENDENCIES
   lefthook
   lograge
   multi_json
-  mysql2 (~> 0.5)
+  pg (~> 1.5)
   puma (>= 5.0)
   rack-cors
   rails (~> 7.1.2)
