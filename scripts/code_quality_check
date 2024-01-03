@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Function to check if a command has failed
+check_failure() {
+  if [ $? -ne 0 ]; then
+    echo "Error: $1 failed. Exiting..."
+    exit 1
+  fi
+}
+
+# Function to run a command with auto-correction
+run_command_with_auto_correct() {
+  command=$1
+  auto_correct_flag=$2
+
+  if [ "$auto_correct_flag" = "--auto-correct" ]; then
+    $command $auto_correct_flag
+    check_failure "$command"
+  else
+    $command
+    check_failure "$command"
+  fi
+}
+
+# Redirect Brakeman's output to a file
+brakeman --no-pager > brakeman_report.txt
+
+# Run RuboCop with auto-correct option if provided
+run_command_with_auto_correct "rubocop" "$1"
+
+# Run Reek
+reek
+check_failure "reek"
+
+# Run Rails Best Practices
+rails_best_practices .
+check_failure "rails_best_practices"
+
+# Run Fasterer
+fasterer
+check_failure "fasterer"
+
+# If all checks pass, exit with success message
+echo "All checks passed successfully."

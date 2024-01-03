@@ -1,0 +1,34 @@
+pre-push:
+  commands:
+    gems-audit:
+      tags: backend security
+      run: bundle audit
+    rspec:
+      tags: backend test
+      glob: "spec/**/*_spec.rb"
+      run: bundle exec rspec {all_files}
+
+pre-commit:
+  parallel: true
+  commands:
+    rubocop:
+      tags: backend style
+      glob: "*.rb"
+      exclude: '(^|/)(application|routes)\.rb$'
+      run: bundle exec rubocop --force-exclusion {all_files}
+    fasterer:
+      tags: backend style
+      glob: "*.rb"
+      run: bundle exec fasterer {all_files}
+    reek:
+      tags: backend style
+      glob: "*.rb"
+      run: bundle exec reek {all_files}
+    brakeman:
+      tags: backend security vulnerability
+      glob: "*.rb"
+      run: bundle exec brakeman -z -q -w2 --no-pager -p . {all_files}
+    rails_best_practices:
+      tags: backend style
+      glob: "*.rb"
+      run: bundle exec rails_best_practices -c .rails_best_practices.yml {all_files}
