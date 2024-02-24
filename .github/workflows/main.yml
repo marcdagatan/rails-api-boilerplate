@@ -1,25 +1,37 @@
+# Refactor this file.
+# Make sure that rspec uses the same environment as setup
+
 name: CI
 
 on:
   pull_request:
-    branches: ["main", "develop"]
+    branches: [ "main", "develop" ]
+  push:
+    branches:
+      - main
+      - develop
 
 jobs:
-  setup:
+  setup_and_test:
     runs-on: ubuntu-latest
     services:
-      postgres:
-        image: postgres:14.1
+      mysql:
+        image: mysql:8.2.0
         ports:
-          - "5432:5432"
+          - "3306:3306"
         env:
-          POSTGRES_USER: rails
-          POSTGRES_PASSWORD: railsPassword54321
+          MYSQL_ROOT_PASSWORD: password
         options: >-
-          --health-cmd="pg_isready"
+          --health-cmd="mysqladmin ping -h localhost"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
+    env:
+      DB_HOST: 127.0.0.1
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_PORT: 3306
+      RAILS_ENV: test
 
     steps:
       - name: Checkout code
@@ -30,39 +42,35 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Install PostgreSQL client
+      - name: Install MySQL client
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y mysql-client
 
-      - name: Wait for PostgreSQL
+      - name: Wait for MySQL
         run: |
           for i in {1..20}; do
-            if pg_isready; then
+            if mysqladmin ping -h 127.0.0.1 -uroot -ppassword --silent; then
               break
             fi
-            echo "Waiting for PostgreSQL ($i)..."
+            echo "Waiting for MySQL ($i)..."
             sleep 1
           done
 
       - name: Copy configs
         run: |
-          cp config/secrets.yml.example config/secrets.yml
-          cp config/database.yml.example config/database.yml
-          cp config/storage.yml.example config/storage.yml
+          bash ./scripts/copy_configs.sh
 
       - name: Set up database
-        env:
-          DB_HOST: 127.0.0.1
-          DB_USER: postgres
-          DB_PASSWORD: railsPassword54321
-          DB_PORT: 5432
-          RAILS_ENV: test
         run: |
           bundle exec rails db:create db:schema:load
 
+      - name: Run rspec
+        run: |
+          bundle exec rspec
+
   rubocop:
-    needs: setup
+    needs: setup_and_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -72,7 +80,7 @@ jobs:
       - run: bundle exec rubocop
 
   brakeman:
-    needs: setup
+    needs: setup_and_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -82,7 +90,7 @@ jobs:
       - run: bundle exec brakeman
 
   fasterer:
-    needs: setup
+    needs: setup_and_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -92,7 +100,7 @@ jobs:
       - run: bundle exec fasterer
 
   reek:
-    needs: setup
+    needs: setup_and_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -102,21 +110,11 @@ jobs:
       - run: bundle exec reek
 
   rails_best_practices:
-    needs: setup
+    needs: setup_and_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - run: bundle exec rails_best_practices
-
-  rspec:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-      - run: bundle exec rspec
+      - run: bundle exec rails_best_practices -c config/rails_best_practices.yml
